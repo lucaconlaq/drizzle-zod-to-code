@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, readdirSync, writeFileSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync, unlinkSync, statSync } from "node:fs";
 
 import { join, resolve } from "node:path";
 import { transform } from "esbuild";
@@ -48,13 +48,24 @@ export const parseConfig = async (options: CommandOptions): Promise<Config> => {
 
 		const schemaPath = resolve(process.cwd(), config.schema);
 		if (!existsSync(schemaPath)) {
-			throw new Error(`Schema directory not found at ${schemaPath}`);
+			throw new Error(`Schema path not found at ${schemaPath}`);
 		}
 
-		// List schema files
-		const schemaFiles = readdirSync(schemaPath)
-			.filter((file) => file.endsWith(".ts"))
-			.map((file) => join(schemaPath, file));
+		const stats = statSync(schemaPath);
+		let schemaFiles: string[];
+
+		if (stats.isFile()) {
+			if (!schemaPath.endsWith(".ts")) {
+				throw new Error(`Schema file must be a TypeScript file: ${schemaPath}`);
+			}
+			schemaFiles = [schemaPath];
+		} else if (stats.isDirectory()) {
+			schemaFiles = readdirSync(schemaPath)
+				.filter((file) => file.endsWith(".ts"))
+				.map((file) => join(schemaPath, file));
+		} else {
+			throw new Error(`Schema path must be a file or directory: ${schemaPath}`);
+		}
 
 		return {
 			tsConfigPath,
