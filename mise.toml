@@ -2,7 +2,8 @@
 
 [tools]
 claude = "latest"
+node = "latest"
 
 
-[alias]
+[tool_alias]
 claude = "npm:@anthropic-ai/claude-code"
