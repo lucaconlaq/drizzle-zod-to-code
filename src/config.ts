@@ -1,6 +1,6 @@
-import { readFileSync, existsSync, readdirSync, writeFileSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync, unlinkSync, statSync } from "node:fs";
 
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { transform } from "esbuild";
 
 export interface CommandOptions {
@@ -46,9 +46,15 @@ export const parseConfig = async (options: CommandOptions): Promise<Config> => {
 			throw new Error("Could not find schema path in drizzle config");
 		}
 
-		const schemaPath = resolve(process.cwd(), config.schema);
+		let schemaPath = resolve(process.cwd(), config.schema);
 		if (!existsSync(schemaPath)) {
-			throw new Error(`Schema directory not found at ${schemaPath}`);
+			throw new Error(`Schema path not found at ${schemaPath}`);
+		}
+
+		// If schema points to a file, use its parent directory
+		const stats = statSync(schemaPath);
+		if (stats.isFile()) {
+			schemaPath = dirname(schemaPath);
 		}
 
 		// List schema files
